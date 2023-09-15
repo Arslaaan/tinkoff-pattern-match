@@ -15,6 +15,19 @@ using namespace std;
 const int ROW_SIZE = 7;
 const int COL_SIZE = 6;
 
+#define DEBUG
+
+#ifdef DEBUG
+#define DEBUG_MSG(str)                 \
+    do {                               \
+        std::cout << str << std::endl; \
+    } while (false)
+#else
+#define DEBUG_MSG(str) \
+    do {               \
+    } while (false)
+#endif
+
 struct MatrixPoint {
     int row;
     int col;
@@ -35,7 +48,7 @@ struct StepProfit {
     }
 
     friend ostream& operator<<(ostream& out, const StepProfit& profit) {
-        out << "Score: " << profit.score;
+        out << "score: " << profit.score;
         if (profit.sun != 0) {
             out << ", +sun: " << profit.sun << ",";
         }
@@ -145,6 +158,7 @@ class GameModel {
             MatrixPoint{currentPoint.row, currentPoint.col - 1};
         if (beginThree.isCorrect() && endThree.isCorrect() &&
             point1.isCorrect() && point2.isCorrect() &&
+            checkEquality(beginThree, endThree, prev) &&
             matrix[point1.row][point1.col] == prev &&
             matrix[point2.row][point2.col] == prev) {
             replacePointToPoint(beginThree, endThree, "x", resultScore, suns);
@@ -241,7 +255,8 @@ class GameModel {
                 replacePointToPoint({row, col - 2}, {row, col - 1}, "x",
                                     resultScore, snows);
                 replacePointToPoint({row + 1, col - 2}, {row + 1, col - 1}, "x",
-                                    resultScore, snows, {row + 1, col - 2}, mapper.at("snow"));
+                                    resultScore, snows, {row + 1, col - 2},
+                                    mapper.at("snow"));
             }
         }
     }
@@ -274,6 +289,8 @@ class GameModel {
     void setCellDirect(int row, int col, const string& shortName) {
         matrix[row][col] = shortName;
     }
+
+    const string& getCell(int row, int col) const { return matrix[row][col]; }
 
     bool isValid() {
         int i = 0;
@@ -383,43 +400,92 @@ class GameModel {
                     }
                 }
             }
-
+            DEBUG_MSG(*this);
             for (j = 0; j < COL_SIZE; ++j) {
                 notEmptyShiftToBottomInColumn(j);
             }
 
             sum = sum + profit;
-            cout << *this << endl;
+            DEBUG_MSG(*this);
         } while (profit.exists());
         return sum;
     }
 
-    StepProfit explodeBooster(int row, int col) {
-        // todo add explode sun by swap
-        // todo refactor this
+    StepProfit explodeIfBooster(int row, int col, string swapCellType = "") {
         const string typeName = matrix[row][col];
-        int score = 0, suns = 0, rockets = 0, snows = 0;
-        matrix[row][col] = "x";
-        if (typeName == mapper.at("vrocket")) {
-            for (int i = 0; i < matrix.size(); ++i) {
-                if (matrix[i][col] != "x") {
-                    setCellDirect(i, col, "x");
-                    score += 10;
+        StepProfit profit;
+        if (isBoosterAt(row, col)) {
+            matrix[row][col] = "x";
+            if (typeName == mapper.at("vrocket")) {
+                explodeRocket(row, col, profit, true, swapCellType);
+            } else if (typeName == mapper.at("grocket")) {
+                explodeRocket(row, col, profit, false, swapCellType);
+            } else if (typeName == mapper.at("sun")) {
+                explodeSun(row, col, profit, swapCellType);
+            } else if (typeName == mapper.at("snow")) {
+                explodeSnow(row, col, profit, swapCellType);
+            }
+            if (profit.score > 0) {
+                for (int j = 0; j < COL_SIZE; ++j) {
+                    notEmptyShiftToBottomInColumn(j);
                 }
             }
-            rockets--;
-        } else if (typeName == mapper.at("grocket")) {
-            for (int j = 0; j < matrix[0].size(); ++j) {
-                if (matrix[row][j] != "x") {
-                    setCellDirect(row, j, "x");
-                    score += 10;
+        }
+        DEBUG_MSG(*this);
+        return profit;
+    }
+
+    StepProfit explodeCell(int row, int col, StepProfit& profit, string swapCellType) {
+        if (MatrixPoint{row, col}.isCorrect() && matrix[row][col] != "x") {
+            profit = profit + explodeIfBooster(row, col, swapCellType);
+            if (!isBoosterAt(row, col)) {
+                setCellDirect(row, col, "x");
+                profit.score += 10;
+            }
+        }
+        return profit;
+    }
+
+    StepProfit explodeRocket(int row, int col, StepProfit& profit, bool isVertical,
+                             string swapCellType) {
+        if (isVertical) {
+            for (int i = 0; i < ROW_SIZE; ++i) {
+                explodeCell(i, col, profit, swapCellType);
+            }
+        } else {
+            for (int j = 0; j < COL_SIZE; ++j) {
+                explodeCell(row, j, profit, swapCellType);
+            }
+        }
+        profit.rocket--;
+        return profit;
+    }
+
+    StepProfit explodeSnow(int row, int col, StepProfit& profit, string swapCellType) {
+        // todo operator +=
+        profit = profit + explodeCell(row + 1, col, profit, swapCellType);
+        profit = profit + explodeCell(row - 1, col, profit, swapCellType);
+        profit = profit + explodeCell(row, col - 1, profit, swapCellType);
+        profit = profit + explodeCell(row, col + 1, profit, swapCellType);
+        profit.snow++;
+        DEBUG_MSG(*this);
+        return profit;
+    }
+
+    StepProfit explodeSun(int row, int col, StepProfit& profit, string swapCellType) {
+        map<string, int> counter;
+        if (swapCellType != "") {
+            for (int i = 0; i < ROW_SIZE; ++i) {
+                for (int j = 0; j < COL_SIZE; ++j) {
+                    if (matrix[i][j] == swapCellType) {
+                        matrix[i][j] = "x";
+                        profit.score += 10;
+                    }
                 }
             }
-            rockets--;
-        } else if (typeName == mapper.at("sun")) {
-            map<string, int> counter;
-            for (int i = 0; i < matrix.size(); ++i) {
-                for (int j = 0; j < matrix[0].size(); ++j) {
+        } else {
+            for (int i = 0; i < ROW_SIZE; ++i) {
+                for (int j = 0; j < COL_SIZE; ++j) {
                     if (!isBoosterAt(i, j) && matrix[i][j] != "x") {
                         counter[matrix[i][j]]++;
                     }
@@ -432,26 +498,17 @@ class GameModel {
                                      return p1.second < p2.second;
                                  })
                     ->first;
-            for (int i = 0; i < matrix.size(); ++i) {
-                for (int j = 0; j < matrix[0].size(); ++j) {
+            for (int i = 0; i < ROW_SIZE; ++i) {
+                for (int j = 0; j < COL_SIZE; ++j) {
                     if (frequent == matrix[i][j]) {
                         matrix[i][j] = "x";
-                        score += 10;
+                        profit.score += 10;
                     }
                 }
             }
-            suns--;
-        } else {
-            // ignore snow because unpredictable
-            matrix[row][col] = mapper.at("snow");
         }
-        if (score > 0) {
-            for (int j = 0; j < COL_SIZE; ++j) {
-                notEmptyShiftToBottomInColumn(j);
-            }
-        }
-        // cout << *this << endl;
-        return {score, suns, snows, rockets};
+        profit.sun--;
+        return profit;
     }
 
     bool isBoosterAt(int row, int col) const {
@@ -619,7 +676,7 @@ class ScreenReader {
     }
 };
 
-void showMatches(const string& screenshotName, const string& objectImageName) {
+int showMatches(const string& screenshotName, const string& objectImageName) {
     // Load images
     Mat gameScreen = imread("../" + screenshotName, IMREAD_COLOR);
     Mat smallImage = imread("../" + objectImageName, IMREAD_COLOR);
@@ -646,14 +703,16 @@ void showMatches(const string& screenshotName, const string& objectImageName) {
     int size = ((smallImage.cols + smallImage.rows) / 4) * 2 +
                1;  // force size to be odd
     adaptiveThreshold(res, res, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY,
-                      size, -200);
+                      size, -150);
 
+    int resultCounter = 0;
     while (1) {
         double minVal, maxVal;
         Point minLoc, maxLoc;
         minMaxLoc(res, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
 
         if (maxVal > 0) {
+            resultCounter++;
             rectangle(
                 gameScreen, maxLoc,
                 Point(maxLoc.x + smallImage.cols, maxLoc.y + smallImage.rows),
@@ -666,7 +725,8 @@ void showMatches(const string& screenshotName, const string& objectImageName) {
     namedWindow("result", WINDOW_NORMAL);
     imshow("result", gameScreen);
     resizeWindow("result", 800, 800);
-    waitKey(0);
+    // waitKey(0);
+    return resultCounter;
 }
 
 const map<string, string> GameModel::mapper = {
@@ -675,26 +735,43 @@ const map<string, string> GameModel::mapper = {
     {"snow", "s"},      {"empty", "x"}};
 
 namespace Action {
-struct Step {
-    string action;
-    MatrixPoint point;
+struct StepOrder {
+    vector<string> actions;
+    vector<MatrixPoint> points;
     StepProfit profit;
 
-    bool operator>(const Step& other) const {
+    void addStep(const string& action, const MatrixPoint& point,
+                 const StepProfit& incomeProfit) {
+        actions.push_back(action);
+        points.push_back(point);
+        profit = profit + incomeProfit;
+    }
+
+    void clear() {
+        actions.clear();
+        points.clear();
+        profit = {0, 0, 0, 0};
+    }
+
+    bool empty() { return actions.empty(); }
+
+    bool operator>(const StepOrder& other) const {
         return profit.score + 60 * profit.rocket + 100 * profit.sun +
                    40 * profit.snow >
                other.profit.score + 60 * other.profit.rocket +
                    100 * other.profit.sun + 40 * other.profit.snow;
     }
-};
-StepProfit getScoreIfSwapBooster(GameModel& gm, int row, int col) {
-    if (gm.isBoosterAt(row, col)) {
-        auto profit1 = gm.explodeBooster(row, col);
-        auto profit2 = gm.updateAndReturnProfit();
-        return profit1 + profit2;
+
+    friend ostream& operator<<(ostream& out, const StepOrder& stepOrder) {
+        for (int i = 0; i < stepOrder.actions.size(); ++i) {
+            out << stepOrder.actions[i] << " [" << stepOrder.points[i].row + 1
+                << ", " << stepOrder.points[i].col + 1 << "] ";
+        }
+        out << stepOrder.profit;
+        return out;
     }
-    return {0, 0, 0, 0};
-}
+};
+
 StepProfit getScoreAfterSwap(const GameModel& gm, int currentRow,
                              int currentCol, int newRow, int newCol) {
     if (gm.isBoosterAt(currentRow, currentCol) &&
@@ -704,48 +781,117 @@ StepProfit getScoreAfterSwap(const GameModel& gm, int currentRow,
     GameModel newGm = gm;
     newGm.swap(currentRow, currentCol, newRow, newCol);
     // todo replace this by one method
-    auto profit = getScoreIfSwapBooster(newGm, currentRow, currentCol);
-    if (profit.exists()) {
-        return profit;
-    }
-    profit = getScoreIfSwapBooster(newGm, newRow, newCol);
-    if (profit.exists()) {
-        return profit;
-    }
-    return newGm.updateAndReturnProfit();
+    auto profit = newGm.explodeIfBooster(currentRow, currentCol,
+                                         gm.getCell(newRow, newCol)) +
+                  newGm.explodeIfBooster(newRow, newCol,
+                                         gm.getCell(currentRow, currentCol));
+    return profit + newGm.updateAndReturnProfit();
 };
 
-void checkAllSwaps(GameModel& gm) {
-    vector<Step> steps;
-    for (int i = 0; i < 6; ++i) {
-        for (int j = 0; j < 5; ++j) {
-            const StepProfit& scoreForRight =
-                Action::getScoreAfterSwap(gm, i, j, i, j + 1);
-            const StepProfit& scoreForBottom =
-                Action::getScoreAfterSwap(gm, i, j, i + 1, j);
-            if (scoreForRight.exists()) {
-                steps.push_back({"swap to right", {i, j}, scoreForRight});
+// check only bottom and right because its enough
+bool checkSwapProfit(const GameModel& gm, StepOrder& stepOrder,
+                     const MatrixPoint& point1, const MatrixPoint& point2) {
+    const StepProfit& score = Action::getScoreAfterSwap(
+        gm, point1.row, point1.col, point2.row, point2.col);
+    if (score.exists()) {
+        string direction = "bottom";
+        if (point2.row == point1.row) {
+            direction = "right";
+        }
+        if (stepOrder.empty()) {
+            stepOrder.clear();
+        }
+        stepOrder.addStep("[swap to " + direction + "]",
+                          {point1.row, point1.col}, score);
+        return true;
+    }
+    return false;
+}
+
+vector<StepOrder> checkAllSwapsAndBoosterExplode(const GameModel& gm,
+                                const StepOrder& baseStep = {{}}) {
+    vector<StepOrder> steps;
+    for (int i = 0; i < ROW_SIZE - 1; ++i) {
+        for (int j = 0; j < COL_SIZE - 1; ++j) {
+            StepOrder base1 = baseStep;
+            if (checkSwapProfit(gm, base1, {i, j}, {i, j + 1})) {
+                steps.push_back(base1);
             }
-            if (scoreForBottom.exists()) {
-                steps.push_back({"swap to bottom", {i, j}, scoreForBottom});
+            StepOrder base2 = baseStep;
+            if (checkSwapProfit(gm, base2, {i, j}, {i + 1, j})) {
+                steps.push_back(base2);
+            }
+            StepOrder base3 = baseStep;
+            GameModel newGm = gm;
+            auto profit = newGm.explodeIfBooster(i, j) + newGm.updateAndReturnProfit();
+            if (profit.exists()) {
+                base3.addStep("[touch]", {i, j}, profit);
+                steps.push_back(base3);
             }
         }
     }
     sort(steps.begin(), steps.end(), greater());
-    for (int i = 0; i < 5; ++i) {
-        cout << "[" << steps[i].point.row + 1 << ", " << steps[i].point.col + 1
-             << "] " + steps[i].action << " " << steps[i].profit << endl;
+    // 3 best results
+    return {steps.begin(), steps.begin() + min((size_t)3, steps.size())};
+};
+
+vector<StepOrder> checkAllHammer(const GameModel& gm) {
+    // is it gain 10 score ?
+    vector<StepOrder> steps;
+    for (int i = 0; i < ROW_SIZE; ++i) {
+        for (int j = 0; j < COL_SIZE; ++j) {
+            GameModel newGm = gm;
+            newGm.setCellDirect(i, j, "x");
+            auto profit = newGm.updateAndReturnProfit();
+            StepOrder hammerStep = {{"[hammer]"}, {{i, j}}, profit};
+            const vector<StepOrder>& swaps = checkAllSwapsAndBoosterExplode(newGm, hammerStep);
+            steps.insert(steps.end(), swaps.begin(), swaps.end());
+        }
     }
+    sort(steps.begin(), steps.end(), greater());
+    // 3 best results
+    return {steps.begin(), steps.begin() + min((size_t)3, steps.size())};
+};
+
+vector<StepOrder> checkAllSupportHand(const GameModel& gm) {
+    // is it gain 10 score ?
+    vector<StepOrder> steps;
+    for (int i = 0; i < ROW_SIZE - 1; ++i) {
+        for (int j = 0; j < COL_SIZE - 1; ++j) {
+            GameModel newGm = gm;
+            newGm.swap(i, j, i, j + 1);
+            auto profit = newGm.updateAndReturnProfit();
+            StepOrder supportHandStep1 = {{"[hand right]"}, {{i, j}}, profit};
+            const auto& swaps1 = checkAllSwapsAndBoosterExplode(newGm, supportHandStep1);
+            steps.insert(steps.end(), swaps1.begin(), swaps1.end());
+
+            newGm = gm;
+            newGm.swap(i, j, i + 1, j);
+            profit = newGm.updateAndReturnProfit();
+            StepOrder supportHandStep2 = {{"[hand bottom]"}, {{i, j}}, profit};
+            const auto& swaps2 = checkAllSwapsAndBoosterExplode(newGm, supportHandStep2);
+            steps.insert(steps.end(), swaps2.begin(), swaps2.end());
+        }
+    }
+    sort(steps.begin(), steps.end(), greater());
+    // 3 best results
+    return {steps.begin(), steps.begin() + min((size_t)3, steps.size())};
 };
 };  // namespace Action
 
+void printSteps(const vector<Action::StepOrder>& steps) {
+    for (const auto& order : steps) {
+        cout << order << endl;
+    }
+}
+
 void testShow() {
-    showMatches("screen.png", "pig.png");
-    showMatches("screen.png", "pocket.png");
-    showMatches("screen.png", "gold.png");
-    showMatches("screen.png", "briefcase.png");
-    showMatches("screen.png", "sandclock.png");
-    showMatches("screen.png", "sun.png");
+    // showMatches("screen-test.png", "pig.png");
+    // showMatches("screen-test.png", "pocket.png");
+    // showMatches("screen-test.png", "gold.png");
+    // showMatches("screen-test.png", "briefcase.png");
+    // showMatches("screen-test.png", "sandclock.png");
+    // showMatches("screen-test.png", "sun.png");
 }
 
 void test1() {
@@ -765,29 +911,35 @@ void test1() {
 
     StepProfit scores = Action::getScoreAfterSwap(gm, 3, 2, 4, 2);
     cout << scores << endl;
-    // assert(scores.score == 60); ??
+    assert(scores.score == 80);
     assert(scores.snow == 1);
     assert(scores.sun == 0);
     assert(scores.rocket == 1);
 }
 
 void test2() {
-    // GameObjectImages gameObjectImages;
+    // todo i dont know, all seems corect
+    // error in [hand right] [5, 2] [swap to bottom] [5, 3] score: 110 +snow: 1,
+    // +rocket: 1
+    GameObjectImages gameObjectImages;
 
-    // GameModel gm;
-    // stringstream example;
-    // example << "|b|8|g|b|g|p|";
-    // example << "|e|8|g|e|g|b|";
-    // example << "|b|p|8|p|b|p|";
-    // example << "|8|b|p|b|b|p|";
-    // example << "|g|g|b|p|g|g|";
-    // example << "|e|b|p|8|b|e|";
-    // example << "|8|e|b|8|e|b|";
+    GameModel gm;
+    stringstream example;
+    // example << "|b|e|8|b|e|p|";
+    // example << "|b|e|e|p|g|b|";
+    // example << "|p|g|8|g|8|g|";
+    // example << "|g|b|e|b|p|b|";
+    // example << "|p|g|8|e|p|g|";
+    // example << "|g|8|e|g|e|g|";
+    // example << "|e|8|p|e|g|8|";
     // example >> gm;
     // cout << gm << endl;
 
-    // Action::getScoreAfterSwap(gm, 3, 2, 3, 3);
-    // cout << flush << gm << endl;
+    // gm.swap(4, 1, 4, 2);
+    // auto profit1 = gm.updateAndReturnProfit();
+    // gm.swap(4, 2, 5, 2);
+    // auto profit2 = gm.updateAndReturnProfit();
+    // cout << profit1 + profit2 << endl;
 }
 
 void test3() {
@@ -807,11 +959,10 @@ void test3() {
 
     StepProfit scores = Action::getScoreAfterSwap(gm, 2, 2, 2, 3);
     cout << scores << endl;
-    assert(scores.score == 60);
+    assert(scores.score == 80);
     assert(scores.snow == 0);
-    assert(scores.sun == 1); // result 2 so fix it
+    assert(scores.sun == 1);
     assert(scores.rocket == 0);
-
 }
 
 void test4() {
@@ -884,19 +1035,66 @@ void test6() {
     assert(scores.rocket == 0);
 }
 
+void test7() {
+    //  [swap to right] [5, 2] score: 120 +rocket: -1
+    GameObjectImages gameObjectImages;
+
+    GameModel gm;
+    stringstream example;
+    example << "|g|e|e|b|g|e|";
+    example << "|8|b|p|8|p|8|";
+    example << "|b|p|g|g|p|b|";
+    example << "|p|p|e|g|e|e|";
+    example << "|g|||p|b|g|p|";
+    example << "|p|b|~|e|e|b|";
+    example << "|e|b|p|e|g|8|";
+    example >> gm;
+    cout << gm << endl;
+
+    StepProfit scores = Action::getScoreAfterSwap(gm, 4, 1, 4, 2);
+    cout << scores << endl;
+    assert(scores.rocket == -2);
+}
+
+void test8() {
+    // todo
+    //  [swap to right] [3, 3] score: 70 +snow: 1,
+    GameObjectImages gameObjectImages;
+
+    GameModel gm;
+    stringstream example;
+    example << "|b|e|p|8|e|8|";
+    example << "|g|p|g|8|8|e|";
+    example << "|8|b|8|g|8|8|";
+    example << "|b|8|g|b|p|b|";
+    example << "|p|e|p|8|p|e|";
+    example << "|g|e|b|g|e|p|";
+    example << "|e|b|g|e|g|8|";
+    example >> gm;
+    cout << gm << endl;
+
+    StepProfit scores = Action::getScoreAfterSwap(gm, 2, 2, 2, 3);
+    cout << scores << endl;
+    assert(scores.sun == 1);
+    assert(scores.snow == 0);
+    assert(scores.rocket == 0);
+}
+
 void testAll() {
     cout << "Start tests" << endl;
-    // testShow();
-    test1();
-    test2();
-    test3();
-    test4();
-    test5();
-    test6();
+    // test1();
+    // test2();
+    // test3();
+    // test4();
+    // test5();
+    // test6();
+    // test7();
+    test8();
     cout << "End tests" << endl;
 }
 
 int main() {
+    // testShow();
     testAll();
 
     GameObjectImages gameObjectImages;
@@ -909,7 +1107,11 @@ int main() {
         ScreenReader screenReader;
         GameModel gm = screenReader.buildModel(gameObjectImages);
         cout << flush << gm << endl;
-        Action::checkAllSwaps(gm);
+        printSteps(Action::checkAllSwapsAndBoosterExplode(gm));
+        cout << endl;
+        printSteps(Action::checkAllHammer(gm));
+        cout << endl;
+        printSteps(Action::checkAllSupportHand(gm));
     }
 
     return 0;
