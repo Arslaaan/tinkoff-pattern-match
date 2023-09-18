@@ -16,6 +16,8 @@ const int ROW_SIZE = 7;
 const int COL_SIZE = 6;
 
 // #define DEBUG
+#define CALIBRATE 0
+#define IPHONE 0
 
 #ifdef DEBUG
 #define DEBUG_MSG(str)                 \
@@ -112,66 +114,6 @@ class GameModel {
         }
     }
 
-    bool checkEquality(const MatrixPoint& point1, const MatrixPoint& point2,
-                       const string& standartValue) {
-        if (!point1.isCorrect() || !point2.isCorrect()) {
-            return false;
-        }
-        bool isHorizontal = point1.row == point2.row;
-        bool isVertical = point1.col == point2.col;
-        if (!isHorizontal && !isVertical) {
-            return false;
-        }
-        bool isEqual = true;
-        if (isHorizontal) {
-            for (int j = point1.col; j <= point2.col; ++j) {
-                if (matrix[point1.row][j] != standartValue) {
-                    return false;
-                }
-            }
-        }
-        if (isVertical) {
-            for (int i = point1.row; i <= point2.row; ++i) {
-                if (matrix[i][point1.col] != standartValue) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    // replace without check that all values in row or column are equal
-    // think that they 100% equal
-    void replacePointToPoint(const MatrixPoint& point1,
-                             const MatrixPoint& point2,
-                             const string& replaceValue, int& resultScore,
-                             int& boosterCounter,
-                             const MatrixPoint& boosterPoint = {-1, -1},
-                             const string& boosterValue = "") {
-        if (!point1.isCorrect() || !point2.isCorrect()) {
-            return;
-        }
-        bool isHorizontal = point1.row == point2.row;
-        bool isVertical = point1.col == point2.col;
-        if (isHorizontal) {
-            for (int j = point1.col; j <= point2.col; ++j) {
-                matrix[point1.row][j] = replaceValue;
-                resultScore += 10;
-            }
-        } else if (isVertical) {
-            for (int i = point1.row; i <= point2.row; ++i) {
-                matrix[i][point1.col] = replaceValue;
-                resultScore += 10;
-            }
-        }
-        if (isHorizontal || isVertical) {
-            if (boosterPoint.isCorrect()) {
-                matrix[boosterPoint.row][boosterPoint.col] = boosterValue;
-                boosterCounter++;
-            }
-        }
-    }
-
     void collectByTemplate(const MatrixPoint& point,
                            const vector<vector<string>>& templateFigure,
                            StepProfit& profit) {
@@ -245,133 +187,6 @@ class GameModel {
         return profit;
     }
 
-    void replaceComplexTypeFiveBySun(const MatrixPoint& currentPoint,
-                                     const MatrixPoint& point1,
-                                     const MatrixPoint& point2,
-                                     const MatrixPoint& pointReplacedBySun,
-                                     const string& standart, int& resultScore,
-                                     int& suns) {
-        const auto& beginThree =
-            MatrixPoint{currentPoint.row, currentPoint.col - 3};
-        const auto& endThree =
-            MatrixPoint{currentPoint.row, currentPoint.col - 1};
-        if (beginThree.isCorrect() && endThree.isCorrect() &&
-            point1.isCorrect() && point2.isCorrect() &&
-            checkEquality(beginThree, endThree, standart) &&
-            matrix[point1.row][point1.col] == standart &&
-            matrix[point2.row][point2.col] == standart) {
-            replacePointToPoint(beginThree, endThree, "x", resultScore, suns);
-            matrix[point1.row][point1.col] = "x";
-            matrix[point2.row][point2.col] = "x";
-            matrix[pointReplacedBySun.row][pointReplacedBySun.col] =
-                mapper.at("sun");
-            resultScore += 20;
-            suns++;
-        }
-    }
-
-    void collectRockets(const string& prev, int row, int col, int currentScore,
-                        int& resultScore, int& rockets) {
-        if (currentScore == 40) {
-            if (checkEquality({row, col - 4}, {row, col - 1}, prev)) {
-                replacePointToPoint({row, col - 4}, {row, col - 1}, "x",
-                                    resultScore, rockets, {row, col - 4}, "~");
-            } else {
-                replacePointToPoint({row - 4, col}, {row - 1, col}, "x",
-                                    resultScore, rockets, {row - 1, col}, "|");
-            }
-        }
-    }
-
-    void collectSun(const string& prev, int row, int col, int currentScore,
-                    int& resultScore, int& suns) {
-        if (currentScore == 30) {
-            // xxxo
-            // -x--
-            // -x--
-            const auto& current = MatrixPoint{row, col};
-            replaceComplexTypeFiveBySun(current, {row + 1, col - 2},
-                                        {row + 2, col - 2}, {row, col - 2},
-                                        prev, resultScore, suns);
-            // -x--
-            // -x--
-            // xxxo
-            replaceComplexTypeFiveBySun(current, {row - 1, col - 2},
-                                        {row - 2, col - 2}, {row, col - 2},
-                                        prev, resultScore, suns);
-            // --x-
-            // --x-
-            // xxxo
-            replaceComplexTypeFiveBySun(current, {row - 1, col - 1},
-                                        {row - 2, col - 1}, {row, col - 1},
-                                        prev, resultScore, suns);
-            // x---
-            // xxxo
-            // x---
-            replaceComplexTypeFiveBySun(current, {row - 1, col - 3},
-                                        {row + 1, col - 3}, {row, col - 3},
-                                        prev, resultScore, suns);
-            // --x-
-            // xxxo
-            // --x-
-            replaceComplexTypeFiveBySun(current, {row - 1, col - 1},
-                                        {row + 1, col - 1}, {row, col - 1},
-                                        prev, resultScore, suns);
-            // x---
-            // x---
-            // xxxo
-            replaceComplexTypeFiveBySun(current, {row - 1, col - 3},
-                                        {row - 2, col - 3}, {row, col - 3},
-                                        prev, resultScore, suns);
-            // xxxo
-            // x---
-            // x---
-            replaceComplexTypeFiveBySun(current, {row + 1, col - 3},
-                                        {row + 2, col - 3}, {row, col - 3},
-                                        prev, resultScore, suns);
-            // xxxo
-            // --x-
-            // --x-
-            replaceComplexTypeFiveBySun(current, {row + 1, col - 1},
-                                        {row + 2, col - 1}, {row, col - 1},
-                                        prev, resultScore, suns);
-        } else if (currentScore == 50) {
-            if (checkEquality({row, col - 5}, {row, col - 1}, prev)) {
-                replacePointToPoint({row, col - 5}, {row, col - 1}, "x",
-                                    resultScore, suns, {row, col - 5}, "o");
-            } else {
-                replacePointToPoint({row - 5, col}, {row - 1, col}, "x",
-                                    resultScore, suns, {row - 1, col}, "o");
-            }
-        }
-    }
-
-    void collectSnows(const string& prev, int row, int col, int currentScore,
-                      int& resultScore, int& snows) {
-        if (currentScore == 20) {
-            if (checkEquality({row, col - 2}, {row, col - 1}, prev) &&
-                checkEquality({row + 1, col - 2}, {row + 1, col - 1}, prev)) {
-                replacePointToPoint({row, col - 2}, {row, col - 1}, "x",
-                                    resultScore, snows);
-                replacePointToPoint({row + 1, col - 2}, {row + 1, col - 1}, "x",
-                                    resultScore, snows, {row + 1, col - 2},
-                                    mapper.at("snow"));
-            }
-        }
-    }
-
-    void collectBoosters(const string& prev, int row, int col, int currentScore,
-                         StepProfit& stepProfit) {
-        if (prev != "x") {
-            collectSun(prev, row, col, currentScore, stepProfit.score,
-                       stepProfit.sun);
-            collectRockets(prev, row, col, currentScore, stepProfit.score,
-                           stepProfit.rocket);
-            collectSnows(prev, row, col, currentScore, stepProfit.score,
-                         stepProfit.snow);
-        }
-    }
-
     void collectBoosters(StepProfit& stepProfit) {
         stepProfit = stepProfit + collectSun();
         stepProfit = stepProfit + collectRockets();
@@ -409,6 +224,21 @@ class GameModel {
 
             collectBoosters(profit);
             DEBUG_MSG(*this);
+
+            for (int j = 0; j < COL_SIZE; ++j) {
+                notEmptyShiftToBottomInColumn(j);
+            }
+            DEBUG_MSG(*this);
+
+            if (!profit.exists()) {
+                break;
+            }
+
+            sum = sum + profit;
+        }
+
+        while (1) {
+            StepProfit profit;
 
             collectTriples(profit);
             DEBUG_MSG(*this);
@@ -628,6 +458,41 @@ class ScreenReader {
         return {row, col};
     }
 
+    pair<int, int> detectRowAndColForIphone(int x, int y) {
+        // todo can be optimized
+        int row = -1, col = -1;
+        if (inRange(x, 250)) {
+            col = 0;
+        } else if (inRange(x, 391)) {
+            col = 1;
+        } else if (inRange(x, 529)) {
+            col = 2;
+        } else if (inRange(x, 668)) {
+            col = 3;
+        } else if (inRange(x, 810)) {
+            col = 4;
+        } else {
+            col = 5;
+        }
+
+        if (inRange(y, 835)) {
+            row = 0;
+        } else if (inRange(y, 975)) {
+            row = 1;
+        } else if (inRange(y, 1115)) {
+            row = 2;
+        } else if (inRange(y, 1255)) {
+            row = 3;
+        } else if (inRange(y, 1395)) {
+            row = 4;
+        } else if (inRange(y, 1538)) {
+            row = 5;
+        } else if (inRange(y, 1676)) {
+            row = 6;
+        }
+        return {row, col};
+    }
+
     inline bool inRange(int value, int prop) {
         return value >= prop - error && value <= prop + error;
     }
@@ -666,7 +531,7 @@ class ScreenReader {
                 ((gameObject.second.cols + gameObject.second.rows) / 4) * 2 +
                 1;  // force size to be odd
             adaptiveThreshold(res, res, 255, ADAPTIVE_THRESH_MEAN_C,
-                              THRESH_BINARY, size, -200);
+                              THRESH_BINARY, size, -160);
 
             double minVal, maxVal = 1;
             Point minLoc, maxLoc;
@@ -674,9 +539,16 @@ class ScreenReader {
                 minMaxLoc(res, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
                 if (maxVal > 0) {
                     floodFill(res, maxLoc, 0);
-                    const auto position =
-                        detectRowAndCol(maxLoc.x + gameObject.second.cols,
-                                        maxLoc.y + gameObject.second.rows);
+                    pair<int, int> position;
+                    if (IPHONE) {
+                        position = detectRowAndColForIphone(
+                            maxLoc.x + gameObject.second.cols,
+                            maxLoc.y + gameObject.second.rows);
+                    } else {
+                        position =
+                            detectRowAndCol(maxLoc.x + gameObject.second.cols,
+                                            maxLoc.y + gameObject.second.rows);
+                    }
                     gm.setCell(position.first, position.second,
                                gameObject.first);
                 }
@@ -713,7 +585,7 @@ int showMatches(const string& screenshotName, const string& objectImageName) {
     int size = ((smallImage.cols + smallImage.rows) / 4) * 2 +
                1;  // force size to be odd
     adaptiveThreshold(res, res, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY,
-                      size, -150);
+                      size, -160);
 
     int resultCounter = 0;
     while (1) {
@@ -723,6 +595,10 @@ int showMatches(const string& screenshotName, const string& objectImageName) {
 
         if (maxVal > 0) {
             resultCounter++;
+            cout << objectImageName << " "
+                 << Point(maxLoc.x + smallImage.cols,
+                          maxLoc.y + smallImage.rows)
+                 << endl;
             rectangle(
                 gameScreen, maxLoc,
                 Point(maxLoc.x + smallImage.cols, maxLoc.y + smallImage.rows),
@@ -735,7 +611,7 @@ int showMatches(const string& screenshotName, const string& objectImageName) {
     namedWindow("result", WINDOW_NORMAL);
     imshow("result", gameScreen);
     resizeWindow("result", 800, 800);
-    // waitKey(0);
+    waitKey(0);
     return resultCounter;
 }
 
@@ -766,10 +642,10 @@ struct StepOrder {
     bool empty() { return actions.empty(); }
 
     bool operator>(const StepOrder& other) const {
-        return profit.score + 60 * profit.rocket + 100 * profit.sun +
-                   40 * profit.snow >
-               other.profit.score + 60 * other.profit.rocket +
-                   100 * other.profit.sun + 40 * other.profit.snow;
+        return profit.score + 55 * profit.rocket + 90 * profit.sun +
+                   35 * profit.snow >
+               other.profit.score + 55 * other.profit.rocket +
+                   90 * other.profit.sun + 35 * other.profit.snow;
     }
 
     friend ostream& operator<<(ostream& out, const StepOrder& stepOrder) {
@@ -787,6 +663,10 @@ StepProfit getScoreAfterSwap(GameModel& gm, int currentRow, int currentCol,
     if (gm.isBoosterAt(currentRow, currentCol) &&
         gm.isBoosterAt(newRow, newCol)) {
         return {0, 0, 0, 0};  // ignore 2 boosters swap because unpredictable
+    }
+    if (gm.getCell(currentRow, currentCol) == "x" ||
+        gm.getCell(newRow, newCol) == "x") {
+        return {0, 0, 0, 0};
     }
     gm.swap(currentRow, currentCol, newRow, newCol);
     StepProfit profit;
@@ -848,6 +728,50 @@ vector<StepOrder> checkAllSwapsAndBoosterExplode(const GameModel& gm,
     return {steps.begin(), steps.begin() + min((size_t)3, steps.size())};
 };
 
+vector<StepOrder> checkAllSwapsAndBoosterExplodeLvl2(const GameModel& gm) {
+    vector<StepOrder> steps;
+    for (int i = 0; i < ROW_SIZE - 1; ++i) {
+        for (int j = 0; j < COL_SIZE - 1; ++j) {
+            GameModel newGm = gm;
+            auto profit = getScoreAfterSwap(newGm, i, j, i, j + 1);
+            StepOrder rightSwap = {{"[swap right]"}, {{i, j}}, profit};
+            if (profit.exists()) {
+                const auto& swaps1 =
+                    checkAllSwapsAndBoosterExplode(newGm, rightSwap);
+                steps.insert(steps.end(), swaps1.begin(), swaps1.end());
+            }
+
+            newGm = gm;
+            profit = getScoreAfterSwap(newGm, i, j, i + 1, j);
+            StepOrder bottomSwap = {{"[swap botttom]"}, {{i, j}}, profit};
+            if (profit.exists()) {
+                const auto& swaps2 =
+                    checkAllSwapsAndBoosterExplode(newGm, bottomSwap);
+                steps.insert(steps.end(), swaps2.begin(), swaps2.end());
+            }
+
+            newGm = gm;
+            profit = {0, 0, 0, 0};
+            newGm.explodeIfBooster(i, j, profit);
+            profit = profit + newGm.updateAndReturnProfit();
+            if (profit.exists()) {
+                StepOrder touch = {{"[touch]"}, {{i, j}}, profit};
+                const auto& swaps3 =
+                    checkAllSwapsAndBoosterExplode(newGm, touch);
+                steps.insert(steps.end(), swaps3.begin(), swaps3.end());
+            }
+        }
+    }
+    sort(steps.begin(), steps.end(), greater());
+    // 3 best results
+    return {steps.begin(), steps.begin() + min((size_t)3, steps.size())};
+};
+
+StepProfit hammer(GameModel& gm, int row, int col) {
+    gm.setCellDirect(row, col, "x");
+    return gm.updateAndReturnProfit();
+}
+
 vector<StepOrder> checkAllHammer(const GameModel& gm) {
     // is it gain 10 score ?
     vector<StepOrder> steps;
@@ -868,7 +792,6 @@ vector<StepOrder> checkAllHammer(const GameModel& gm) {
 };
 
 vector<StepOrder> checkAllSupportHand(const GameModel& gm) {
-    // is it gain 10 score ?
     vector<StepOrder> steps;
     for (int i = 0; i < ROW_SIZE - 1; ++i) {
         for (int j = 0; j < COL_SIZE - 1; ++j) {
@@ -902,12 +825,15 @@ void printSteps(const vector<Action::StepOrder>& steps) {
 }
 
 void testShow() {
-    // showMatches("screen-test.png", "pig.png");
-    // showMatches("screen-test.png", "pocket.png");
-    // showMatches("screen-test.png", "gold.png");
-    // showMatches("screen-test.png", "briefcase.png");
-    // showMatches("screen-test.png", "sandclock.png");
-    // showMatches("screen-test.png", "sun.png");
+    showMatches("screen-test.png", "pig.png");
+    showMatches("screen-test.png", "pocket.png");
+    showMatches("screen-test.png", "gold.png");
+    showMatches("screen-test.png", "briefcase.png");
+    showMatches("screen-test.png", "sandclock.png");
+    showMatches("screen-test.png", "sun.png");
+    showMatches("screen-test.png", "snow.png");
+    showMatches("screen-test.png", "grocket.png");
+    showMatches("screen-test.png", "vrocket.png");
 }
 
 void test1() {
@@ -1184,6 +1110,29 @@ void test10() {
     assert(scores.rocket == 0);
 }
 
+void test11() {
+    // todo [hammer] [4, 2] [swap to right] [3, 1] score: 50, +sun: 1
+    GameObjectImages gameObjectImages;
+
+    GameModel gm;
+    stringstream example;
+    example << "|g|p|b|b|8|8|";
+    example << "|b|g|p|g|e|g|";
+    example << "|p|p|e|8|e|p|";
+    example << "|b|g|b|p|s|p|";
+    example << "|e|p|e|8|b|b|";
+    example << "|p|p|b|~|g|g|";
+    example << "|||8|8|b|e|8|";
+    example >> gm;
+    cout << gm << endl;
+
+    auto scores = Action::hammer(gm, 3, 1);
+    scores = scores + Action::getScoreAfterSwap(gm, 2, 0, 2, 1);
+    cout << scores << endl;
+    assert(scores.sun == 0);  // no sun as result
+    // seems like correct
+}
+
 void testAll() {
     cout << "Start tests" << endl;
     test1();
@@ -1196,28 +1145,38 @@ void testAll() {
     test8();
     test9();
     test10();
+    test11();
     cout << "End tests" << endl;
 }
 
 int main() {
-    // testShow();
-    testAll();
+    if (CALIBRATE) {
+        system("rm ../screen-test.png");
+        system(
+            "~/platform-tools/adb exec-out screencap -p > ../screen-test.png");
+        testShow();
+    } else {
+        testAll();
 
-    GameObjectImages gameObjectImages;
+        GameObjectImages gameObjectImages;
 
-    while (1) {
-        cin.get();
-        system("rm ../screen.png");
-        system("~/platform-tools/adb exec-out screencap -p > ../screen.png");
+        while (1) {
+            cin.get();
+            system("rm ../screen.png");
+            system(
+                "~/platform-tools/adb exec-out screencap -p > ../screen.png");
 
-        ScreenReader screenReader;
-        GameModel gm = screenReader.buildModel(gameObjectImages);
-        cout << flush << gm << endl;
-        printSteps(Action::checkAllSwapsAndBoosterExplode(gm));
-        cout << endl;
-        printSteps(Action::checkAllHammer(gm));
-        cout << endl;
-        printSteps(Action::checkAllSupportHand(gm));
+            ScreenReader screenReader;
+            GameModel gm = screenReader.buildModel(gameObjectImages);
+            cout << flush << gm << endl;
+            printSteps(Action::checkAllSwapsAndBoosterExplode(gm));
+            cout << endl;
+            printSteps(Action::checkAllSwapsAndBoosterExplodeLvl2(gm));
+            cout << endl;
+            printSteps(Action::checkAllHammer(gm));
+            cout << endl;
+            printSteps(Action::checkAllSupportHand(gm));
+        }
     }
 
     return 0;
