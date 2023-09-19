@@ -16,17 +16,18 @@ void StepOrder::clear() {
 bool StepOrder::empty() { return actions.empty(); }
 
 bool StepOrder::operator>(const StepOrder& other) const {
-    return profit.score + 55 * profit.rocket + 90 * profit.sun +
-               35 * profit.snow >
-           other.profit.score + 55 * other.profit.rocket +
-               90 * other.profit.sun + 35 * other.profit.snow;
+    return allProfit(profit) >
+           allProfit(other.profit);
 }
 
 std::ostream& operator<<(std::ostream& out, const StepOrder& stepOrder) {
+    int cost = 0;
     for (int i = 0; i < stepOrder.actions.size(); ++i) {
         out << stepOrder.actions[i] << " [" << stepOrder.points[i].row + 1
             << ", " << stepOrder.points[i].col + 1 << "] ";
+        cost += BOOSTER_COST_MAPPER.at(stepOrder.actions[i]);
     }
-    out << stepOrder.profit;
+    out << stepOrder.profit << " s/p: "
+        << StepOrder::allProfit(stepOrder.profit) / (1.0) * cost;
     return out;
 }

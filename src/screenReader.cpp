@@ -89,6 +89,7 @@ void ScreenReader::calibrate(const FigureImages& gameObjectImages) {
         // waitKey(0);
     }
     for (int i = 0; i < 2; ++i) {
+        grid[i].clear();
         std::sort(gridRaw[i].begin(), gridRaw[i].end());
         int prev = gridRaw[i][0];
         grid[i].push_back(prev);
