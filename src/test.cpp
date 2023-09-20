@@ -6,6 +6,7 @@
 #include "actions.h"
 #include "figureImages.h"
 #include "gameModel.h"
+#include "stepOrderGenerator.h"
 
 TEST(MATRIX, test1) {
     FigureImages gameObjectImages;
@@ -303,7 +304,100 @@ TEST(MATRIX, test11) {
     ASSERT_EQ(scores.sun, 0);  // no sun as result
 }
 
-int main(int argc, char **argv) {
+TEST(MATRIX, test12) {
+    // [swap right] [3, 3] score: 120 s/p: 4.8 -- error
+    FigureImages gameObjectImages;
+
+    GameModel gm;
+    std::stringstream example;
+    example << "|b|8|g|g|b|8|";
+    example << "|p|e|g|p|e|b|";
+    example << "|b|e|b|p|8|8|";
+    example << "|b|~|~|e|e|p|";
+    example << "|g|g|o|8|8|g|";
+    example << "|p|p|o|8|e|g|";
+    example << "|b|p|o|p|b|8|";
+    example >> gm;
+    std::cout << gm << std::endl;
+
+    auto scores = Action::getScoreAfterSwap(gm, 2, 2, 2, 3);
+    std::cout << scores << std::endl;
+    ASSERT_EQ(scores.score, 0);  // no sun as result
+}
+
+TEST(MATRIX, test13) {
+    FigureImages gameObjectImages;
+
+    GameModel gm;
+    std::stringstream example;
+    example << "|b|8|g|g|b|8|";
+    example << "|p|e|g|p|e|b|";
+    example << "|b|e|b|p|8|8|";
+    example << "|b|b|g|e|e|p|";
+    example << "|g|g|p|8|8|g|";
+    example << "|p|p|8|8|e|g|";
+    example << "|b|p|e|p|b|8|";
+    example >> gm;
+    std::cout << gm << std::endl;
+
+    StepOrder stepOrder({"[swap bottom]"}, {{4, 4}}, {0, 0, 0, 0});
+    Action::calculateProfit(gm, stepOrder, true);
+    std::cout << stepOrder.profit << std::endl;
+    ASSERT_EQ(stepOrder.profit.score, 120);
+}
+
+TEST(DEEP_CALC, lvl2) {
+    FigureImages gameObjectImages;
+
+    GameModel gm;
+    std::stringstream example;
+    example << "|b|8|g|g|b|8|";
+    example << "|p|e|g|p|e|b|";
+    example << "|b|e|b|p|8|8|";
+    example << "|b|b|g|e|e|p|";
+    example << "|g|g|p|8|8|g|";
+    example << "|p|p|8|8|e|g|";
+    example << "|b|p|e|p|b|8|";
+    example >> gm;
+    std::cout << gm << std::endl;
+
+    StepOrderGenerator generator;
+    generator.fillUp(gm);
+    auto stepOrders = move(generator.generate(2));
+    for (auto& stepOrder : stepOrders) {
+        Action::calculateProfit(gm, stepOrder);
+    }
+    std::sort(stepOrders.begin(), stepOrders.end(), std::greater());
+    std::cout << *stepOrders.begin() << std::endl;
+}
+
+TEST(DEEP_CALC, lvl3) {
+    FigureImages gameObjectImages;
+
+    GameModel gm;
+    std::stringstream example;
+    example << "|b|8|g|g|b|8|";
+    example << "|p|e|g|p|e|b|";
+    example << "|b|e|b|p|8|8|";
+    example << "|b|b|g|e|e|p|";
+    example << "|g|g|p|8|8|g|";
+    example << "|p|p|8|8|e|g|";
+    example << "|b|p|e|p|b|8|";
+    example >> gm;
+    std::cout << gm << std::endl;
+
+    StepOrderGenerator generator;
+    generator.fillUp(gm);
+    auto stepOrders = move(generator.generate(3));
+    for (auto& stepOrder : stepOrders) {
+        Action::calculateProfit(gm, stepOrder);
+    }
+    std::sort(stepOrders.begin(), stepOrders.end(), std::greater());
+    std::cout << *stepOrders.begin() << std::endl;
+}
+
+int main(int argc, char** argv) {
+    ::testing::GTEST_FLAG(filter) = "*lvl2*";
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

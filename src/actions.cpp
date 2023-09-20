@@ -1,7 +1,11 @@
 #include "actions.h"
 
 StepProfit Action::getScoreAfterSwap(GameModel& gm, int currentRow,
-                                     int currentCol, int newRow, int newCol) {
+                                     int currentCol, int newRow, int newCol,
+                                     bool debug) {
+    if (debug) {
+        gm.enableDebug();
+    }
     if (gm.isBoosterAt(currentRow, currentCol) &&
         gm.isBoosterAt(newRow, newCol)) {
         return {0, 0, 0, 0};  // ignore 2 boosters swap because unpredictable
@@ -16,6 +20,9 @@ StepProfit Action::getScoreAfterSwap(GameModel& gm, int currentRow,
                         gm.getCell(newRow, newCol));
     gm.explodeIfBooster(newRow, newCol, profit,
                         gm.getCell(currentRow, currentCol));
+    if (!profit.exists()) {
+        return gm.updateAndReturnProfit();
+    }
     return profit + gm.updateAndReturnProfit();
 }
 bool Action::checkSwapProfit(const GameModel& gm, StepOrder& stepOrder,
@@ -32,124 +39,65 @@ bool Action::checkSwapProfit(const GameModel& gm, StepOrder& stepOrder,
         if (stepOrder.empty()) {
             stepOrder.clear();
         }
-        stepOrder.addStep("[swap to " + direction + "]",
-                          {point1.row, point1.col}, score);
+        stepOrder.addStep("[swap " + direction + "]", {point1.row, point1.col},
+                          score);
         return true;
     }
     return false;
 }
-
-std::vector<StepOrder> Action::checkAllSwapsAndBoosterExplode(
-    const GameModel& gm, const StepOrder& baseStep) {
-    std::vector<StepOrder> steps;
-    for (int i = 0; i < ROW_SIZE - 1; ++i) {
-        for (int j = 0; j < COL_SIZE - 1; ++j) {
-            StepOrder base1 = baseStep;
-            if (checkSwapProfit(gm, base1, {i, j}, {i, j + 1})) {
-                steps.push_back(base1);
-            }
-            StepOrder base2 = baseStep;
-            if (checkSwapProfit(gm, base2, {i, j}, {i + 1, j})) {
-                steps.push_back(base2);
-            }
-            StepOrder base3 = baseStep;
-            GameModel newGm = gm;
-            StepProfit profit;
-            newGm.explodeIfBooster(i, j, profit);
-            profit = profit + newGm.updateAndReturnProfit();
-            if (profit.exists()) {
-                base3.addStep("[touch]", {i, j}, profit);
-                steps.push_back(base3);
-            }
-        }
+void Action::calculateProfit(const GameModel& gm, StepOrder& stepOrder,
+                             bool debug) {
+    GameModel newGm = gm;
+    if (debug) {
+        newGm.enableDebug();
     }
-    sort(steps.begin(), steps.end(), std::greater());
-    // 3 best results
-    return {steps.begin(), steps.begin() + std::min((size_t)3, steps.size())};
-}
-std::vector<StepOrder> Action::checkAllSwapsAndBoosterExplodeLvl2(
-    const GameModel& gm) {
-    std::vector<StepOrder> steps;
-    for (int i = 0; i < ROW_SIZE - 1; ++i) {
-        for (int j = 0; j < COL_SIZE - 1; ++j) {
-            GameModel newGm = gm;
-            auto profit = getScoreAfterSwap(newGm, i, j, i, j + 1);
-            StepOrder rightSwap = {{"[swap right]"}, {{i, j}}, profit};
-            if (profit.exists()) {
-                const auto& swaps1 =
-                    checkAllSwapsAndBoosterExplode(newGm, rightSwap);
-                steps.insert(steps.end(), swaps1.begin(), swaps1.end());
+    StepProfit sum;
+    for (int i = 0; i < stepOrder.actions.size(); i++) {
+        const auto& typeAction = stepOrder.actions[i];
+        const auto& point = stepOrder.points[i];
+        StepProfit profit;
+        if (typeAction == "[touch]") {
+            if (!newGm.isBoosterAt(point.row, point.col)) {
+                stepOrder.profit = {0, 0, 0, 0};
+                return;
             }
-
-            newGm = gm;
-            profit = getScoreAfterSwap(newGm, i, j, i + 1, j);
-            StepOrder bottomSwap = {{"[swap botttom]"}, {{i, j}}, profit};
-            if (profit.exists()) {
-                const auto& swaps2 =
-                    checkAllSwapsAndBoosterExplode(newGm, bottomSwap);
-                steps.insert(steps.end(), swaps2.begin(), swaps2.end());
-            }
-
-            newGm = gm;
-            profit = {0, 0, 0, 0};
-            newGm.explodeIfBooster(i, j, profit);
+            newGm.explodeIfBooster(point.row, point.col, profit);
             profit = profit + newGm.updateAndReturnProfit();
-            if (profit.exists()) {
-                StepOrder touch = {{"[touch]"}, {{i, j}}, profit};
-                const auto& swaps3 =
-                    checkAllSwapsAndBoosterExplode(newGm, touch);
-                steps.insert(steps.end(), swaps3.begin(), swaps3.end());
+        } else if (typeAction == "[swap right]") {
+            profit = getScoreAfterSwap(newGm, point.row, point.col, point.row,
+                                       point.col + 1);
+            if (!profit.exists()) {
+                stepOrder.profit = {0, 0, 0, 0};
+                return;
             }
+        } else if (typeAction == "[swap bottom]") {
+            profit = getScoreAfterSwap(newGm, point.row, point.col,
+                                       point.row + 1, point.col);
+            if (!profit.exists()) {
+                stepOrder.profit = {0, 0, 0, 0};
+                return;
+            }
+        } else if (typeAction == "[hammer]") {
+            profit = hammer(newGm, point.row, point.col);
+        } else if (typeAction == "[hand right]") {
+            // swap without booster boom
+            newGm.swap(point.row, point.col, point.row, point.col + 1);
+            profit = newGm.updateAndReturnProfit();
+        } else if (typeAction == "[hand bottom]") {
+            // swap without booster boom
+            newGm.swap(point.row, point.col, point.row + 1, point.col);
+            profit = newGm.updateAndReturnProfit();
+        } else if (typeAction == "[hboom]") {
+            newGm.explodeRocket(i, 0, profit, false, "");
+            profit = profit + newGm.updateAndReturnProfit();
+        } else {
+            throw new std::invalid_argument("no action: " + typeAction);
         }
+        sum = sum + profit;
     }
-    sort(steps.begin(), steps.end(), std::greater());
-    // 3 best results
-    return {steps.begin(), steps.begin() + std::min((size_t)3, steps.size())};
+    stepOrder.profit = sum;
 }
 StepProfit Action::hammer(GameModel& gm, int row, int col) {
     gm.setCellDirect(row, col, "x");
     return gm.updateAndReturnProfit();
 }
-std::vector<StepOrder> Action::checkAllHammer(const GameModel& gm) {
-    // is it gain 10 score ?
-    std::vector<StepOrder> steps;
-    for (int i = 0; i < ROW_SIZE; ++i) {
-        for (int j = 0; j < COL_SIZE; ++j) {
-            GameModel newGm = gm;
-            newGm.setCellDirect(i, j, "x");
-            auto profit = newGm.updateAndReturnProfit();
-            StepOrder hammerStep = {{"[hammer]"}, {{i, j}}, profit};
-            const std::vector<StepOrder>& swaps =
-                checkAllSwapsAndBoosterExplode(newGm, hammerStep);
-            steps.insert(steps.end(), swaps.begin(), swaps.end());
-        }
-    }
-    sort(steps.begin(), steps.end(), std::greater());
-    // 3 best results
-    return {steps.begin(), steps.begin() + std::min((size_t)3, steps.size())};
-}
-std::vector<StepOrder> Action::checkAllSupportHand(const GameModel& gm) {
-    std::vector<StepOrder> steps;
-    for (int i = 0; i < ROW_SIZE - 1; ++i) {
-        for (int j = 0; j < COL_SIZE - 1; ++j) {
-            GameModel newGm = gm;
-            newGm.swap(i, j, i, j + 1);
-            auto profit = newGm.updateAndReturnProfit();
-            StepOrder supportHandStep1 = {{"[hand right]"}, {{i, j}}, profit};
-            const auto& swaps1 =
-                checkAllSwapsAndBoosterExplode(newGm, supportHandStep1);
-            steps.insert(steps.end(), swaps1.begin(), swaps1.end());
-
-            newGm = gm;
-            newGm.swap(i, j, i + 1, j);
-            profit = newGm.updateAndReturnProfit();
-            StepOrder supportHandStep2 = {{"[hand bottom]"}, {{i, j}}, profit};
-            const auto& swaps2 =
-                checkAllSwapsAndBoosterExplode(newGm, supportHandStep2);
-            steps.insert(steps.end(), swaps2.begin(), swaps2.end());
-        }
-    }
-    sort(steps.begin(), steps.end(), std::greater());
-    // 3 best results
-    return {steps.begin(), steps.begin() + std::min((size_t)3, steps.size())};
-};

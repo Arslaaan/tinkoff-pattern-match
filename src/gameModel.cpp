@@ -1,5 +1,17 @@
 #include "gameModel.h"
 
+// #define DEBUG
+#ifdef DEBUG
+#define DEBUG_MSG(str)                 \
+    do {                               \
+        std::cout << str << std::endl; \
+    } while (false)
+#else
+#define DEBUG_MSG(str) \
+    do {               \
+    } while (false)
+#endif
+
 void GameModel::notEmptyShiftToBottomInColumn(int col) {
     std::vector<std::string> newColumn(matrix.size(), "x");
     int k = matrix.size() - 1;
@@ -26,6 +38,11 @@ void GameModel::collectByTemplate(
         }
     }
     const std::string value = matrix[point.row][point.col + firstNonEmpty];
+    if (value == "s" || value == "o" || value == "|" || value == "~") {
+        // boosters cant collect
+        return;
+    }
+
     if (value != "x") {
         for (int i = 0; i < templateFigure.size(); ++i) {
             for (int j = 0; j < templateFigure.at(0).size(); ++j) {
@@ -49,6 +66,15 @@ void GameModel::collectByTemplate(
         }
     }
 }
+
+void GameModel::enableDebug() {
+    // todo debug compile time
+        debug = true;
+    }
+
+void GameModel::disableDebug() {
+        debug = true;
+    }
 
 void GameModel::collectByTemplates(
     const std::vector<std::vector<std::vector<std::string>>>& templates,
@@ -122,12 +148,16 @@ StepProfit GameModel::updateAndReturnProfit() {
         StepProfit profit;
 
         collectBoosters(profit);
-        DEBUG_MSG(*this);
+        if (debug) {
+            std::cout << *this << std::endl;
+        }
 
         for (int j = 0; j < COL_SIZE; ++j) {
             notEmptyShiftToBottomInColumn(j);
         }
-        DEBUG_MSG(*this);
+        if (debug) {
+            std::cout << *this << std::endl;
+        }
 
         if (!profit.exists()) {
             break;
@@ -140,12 +170,16 @@ StepProfit GameModel::updateAndReturnProfit() {
         StepProfit profit;
 
         collectTriples(profit);
-        DEBUG_MSG(*this);
+        if (debug) {
+            std::cout << *this << std::endl;
+        }
 
         for (int j = 0; j < COL_SIZE; ++j) {
             notEmptyShiftToBottomInColumn(j);
         }
-        DEBUG_MSG(*this);
+        if (debug) {
+            std::cout << *this << std::endl;
+        }
 
         if (!profit.exists()) {
             break;
@@ -176,7 +210,6 @@ void GameModel::explodeIfBooster(int row, int col, StepProfit& profit,
             }
         }
     }
-    DEBUG_MSG(*this);
 }
 
 void GameModel::explodeCell(int row, int col, StepProfit& profit,
@@ -212,7 +245,6 @@ void GameModel::explodeSnow(int row, int col, StepProfit& profit,
     explodeCell(row, col - 1, profit, swapCellType);
     explodeCell(row, col + 1, profit, swapCellType);
     profit.snow--;
-    DEBUG_MSG(*this);
 }
 
 void GameModel::explodeSun(int row, int col, StepProfit& profit,
@@ -256,10 +288,10 @@ void GameModel::explodeSun(int row, int col, StepProfit& profit,
 
 bool GameModel::isBoosterAt(int row, int col) const {
     const std::string& shortName = matrix[row][col];
-    return shortName == FIGURE_MAPPER.at("s") ||
-           shortName == FIGURE_MAPPER.at("o") ||
-           shortName == FIGURE_MAPPER.at("|") ||
-           shortName == FIGURE_MAPPER.at("~");
+    return shortName == FIGURE_MAPPER.at("snow") ||
+           shortName == FIGURE_MAPPER.at("sun") ||
+           shortName == FIGURE_MAPPER.at("vrocket") ||
+           shortName == FIGURE_MAPPER.at("grocket");
 }
 
 void GameModel::swap(int row_1, int col_1, int row_2, int col_2) {

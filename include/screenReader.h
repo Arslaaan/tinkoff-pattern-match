@@ -4,11 +4,10 @@
 using namespace cv;
 
 class ScreenReader {
-    // std::vector<std::vector<int>> screenshotGrid = {
-    //     {250, 391, 529, 668, 810}, {835, 975, 1115, 1255, 1395, 1538, 1676}};
+    // todo read grid after calibrate
     std::vector<std::vector<int>> grid = {
-        {272, 404, 537, 670, 802, 934},
-        {878, 1011, 1143, 1276, 1410, 1541, 1675}};
+        {271, 405, 537, 670, 802, 934},
+        {878, 1011, 1145, 1277, 1408, 1541, 1673}};
     Mat gameScreen;
     Mat gref;
     const int error = 25;  // pixels

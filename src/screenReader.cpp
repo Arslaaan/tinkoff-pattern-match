@@ -102,7 +102,7 @@ void ScreenReader::calibrate(const FigureImages& gameObjectImages) {
     }
     for (int i = 0; i < 2; ++i) {
         for (const auto& it : grid[i]) {
-            std::cout << it << " ";
+            std::cout << it << ", ";
         }
         std::cout << std::endl;
     }

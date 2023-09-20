@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <map>
 #include <string>
@@ -9,19 +10,9 @@
 #include "matrixPoint.h"
 #include "stepProfit.h"
 
-#ifdef DEBUG
-#define DEBUG_MSG(str)                 \
-    do {                               \
-        std::cout << str << std::endl; \
-    } while (false)
-#else
-#define DEBUG_MSG(str) \
-    do {               \
-    } while (false)
-#endif
-
 class GameModel {
     std::vector<std::vector<std::string>> matrix;
+    bool debug = false;
 
     void notEmptyShiftToBottomInColumn(int col);
 
@@ -78,4 +69,8 @@ class GameModel {
     friend std::ostream& operator<<(std::ostream& out, const GameModel& gm);
 
     friend GameModel& operator>>(std::istream& in, GameModel& gm);
+
+    void enableDebug();
+
+    void disableDebug();
 };

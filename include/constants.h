@@ -6,8 +6,6 @@ const int ROW_SIZE = 7;
 const int COL_SIZE = 6;
 
 const bool CALIBRATION = false;
-const bool CAMERA_SRC = false;  // read game model from camera on another phone
-                                // otherwise from screenshot
 
 const std::map<std::string, std::string> FIGURE_MAPPER = {
     {"briefcase", "b"}, {"gold", "g"},  {"pig", "p"},     {"pocket", "e"},
@@ -21,11 +19,8 @@ const std::map<std::string, std::string> FIGURE_MAPPER = {
 
 // todo replace by enum + refactor actions after
 const std::map<std::string, int> BOOSTER_COST_MAPPER = {
-    {"[hammer]", 50},
-    {"[swap right]", 25},
-    {"[swap bottom]", 25},
-    {"[hand right]", 50},
-    {"[hand bottom]", 50},
+    {"[hammer]", 50},         {"[touch]", 25},      {"[swap right]", 25},
+    {"[swap bottom]", 25}, {"[hand right]", 50}, {"[hand bottom]", 50},
     {"[hboom]", 100},
 };
 

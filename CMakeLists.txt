@@ -25,6 +25,7 @@ add_executable(
     src/figureImages.cpp
     src/matrixPoint.cpp
     src/gameModel.cpp
+    src/stepOrderGenerator.cpp
 )
 
 enable_testing()
@@ -38,6 +39,7 @@ add_executable(
     src/figureImages.cpp
     src/matrixPoint.cpp
     src/gameModel.cpp
+    src/stepOrderGenerator.cpp
 )
 
 target_link_libraries(
