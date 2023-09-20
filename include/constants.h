@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <set>
 const int ROW_SIZE = 7;
 const int COL_SIZE = 6;
 
@@ -23,6 +24,11 @@ const std::map<std::string, int> BOOSTER_COST_MAPPER = {
     {"[swap bottom]", 25}, {"[hand right]", 50}, {"[hand bottom]", 50},
     {"[hboom]", 100},
 };
+
+const std::set<std::string> DOUBLE_SUN = {"o", "o"};
+const std::set<std::string> DOUBLE_SNOW = {"s", "s"};
+const std::set<std::string> DOUBLE_ROCKET = {"~", "|"};
+const std::set<std::string> SUN_AND_SNOW = {"o", "s"};
 
 namespace FiguresTemplates {
 static const std::vector<std::vector<std::vector<std::string>>>&

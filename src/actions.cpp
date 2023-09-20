@@ -8,7 +8,20 @@ StepProfit Action::getScoreAfterSwap(GameModel& gm, int currentRow,
     }
     if (gm.isBoosterAt(currentRow, currentCol) &&
         gm.isBoosterAt(newRow, newCol)) {
-        return {0, 0, 0, 0};  // ignore 2 boosters swap because unpredictable
+        std::set<std::string> types = {gm.getCell(currentRow, currentCol), gm.getCell(newRow, newCol)};
+        gm.setCellDirect(currentRow, currentCol, "x");
+        gm.setCellDirect(newRow, newCol, "x");
+        StepProfit profit;
+        if (types == DOUBLE_SUN) {
+            gm.explodeDoubleSun(newRow, newCol, profit);
+        } else if (types == DOUBLE_SNOW) {
+            gm.explodeDoubleSnow(newRow, newCol, profit);
+        } else if (types == SUN_AND_SNOW) {
+            gm.explodeSnowAndSun(newRow, newCol, profit);
+        } else if (types == DOUBLE_ROCKET) {
+            gm.explodeDoubleRocket(newRow, newCol, profit);
+        }
+        return profit;  // ignore 2 boosters swap because unpredictable
     }
     if (gm.getCell(currentRow, currentCol) == "x" ||
         gm.getCell(newRow, newCol) == "x") {
@@ -16,9 +29,9 @@ StepProfit Action::getScoreAfterSwap(GameModel& gm, int currentRow,
     }
     gm.swap(currentRow, currentCol, newRow, newCol);
     StepProfit profit;
-    gm.explodeIfBooster(currentRow, currentCol, profit,
+    gm.explodeIfSingleBooster(currentRow, currentCol, profit,
                         gm.getCell(newRow, newCol));
-    gm.explodeIfBooster(newRow, newCol, profit,
+    gm.explodeIfSingleBooster(newRow, newCol, profit,
                         gm.getCell(currentRow, currentCol));
     if (!profit.exists()) {
         return gm.updateAndReturnProfit();
@@ -61,7 +74,7 @@ void Action::calculateProfit(const GameModel& gm, StepOrder& stepOrder,
                 stepOrder.profit = {0, 0, 0, 0};
                 return;
             }
-            newGm.explodeIfBooster(point.row, point.col, profit);
+            newGm.explodeIfSingleBooster(point.row, point.col, profit);
             profit = profit + newGm.updateAndReturnProfit();
         } else if (typeAction == "[swap right]") {
             profit = getScoreAfterSwap(newGm, point.row, point.col, point.row,

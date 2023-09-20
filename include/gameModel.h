@@ -47,8 +47,8 @@ class GameModel {
 
     StepProfit updateAndReturnProfit();
 
-    void explodeIfBooster(int row, int col, StepProfit& profit,
-                          std::string swapCellType = "");
+    void explodeIfSingleBooster(int row, int col, StepProfit& profit,
+                                std::string swapCellType = "");
 
     void explodeCell(int row, int col, StepProfit& profit,
                      std::string swapCellType);
@@ -61,6 +61,14 @@ class GameModel {
 
     void explodeSun(int row, int col, StepProfit& profit,
                     std::string swapCellType);
+
+    void explodeDoubleSnow(int row, int col, StepProfit& profit);
+
+    void explodeDoubleSun(int row, int col, StepProfit& profit);
+
+    void explodeDoubleRocket(int row, int col, StepProfit& profit);
+
+    void explodeSnowAndSun(int row, int col, StepProfit& profit);
 
     bool isBoosterAt(int row, int col) const;
 

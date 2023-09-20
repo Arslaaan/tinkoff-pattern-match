@@ -2,19 +2,19 @@
 
 StepOrderGenerator::StepOrderGenerator() {
     for (int i = 0; i < ROW_SIZE; ++i) {
-        basicActions.push_back({{"[hboom]"}, {{i, 0}}, {0, 0, 0, 0}});
+        // basicActions.push_back({{"[hboom]"}, {{i, 0}}, {0, 0, 0, 0}});
         for (int j = 0; j < COL_SIZE; ++j) {
             if (i < ROW_SIZE - 1) {
                 basicActions.push_back(
                     {{"[swap bottom]"}, {{i, j}}, {0, 0, 0, 0}});
-                basicActions.push_back(
-                    {{"[hand bottom]"}, {{i, j}}, {0, 0, 0, 0}});
+                // basicActions.push_back(
+                //     {{"[hand bottom]"}, {{i, j}}, {0, 0, 0, 0}});
             }
             if (j < COL_SIZE - 1) {
                 basicActions.push_back(
                     {{"[swap right]"}, {{i, j}}, {0, 0, 0, 0}});
-                basicActions.push_back(
-                    {{"[hand right]"}, {{i, j}}, {0, 0, 0, 0}});
+                // basicActions.push_back(
+                //     {{"[hand right]"}, {{i, j}}, {0, 0, 0, 0}});
             }
         }
     }
@@ -28,7 +28,7 @@ void StepOrderGenerator::fillUp(const GameModel& gm) {
             if (gm.isBoosterAt(i, j)) {
                 basicActions.push_back({{"[touch]"}, {{i, j}}, {0, 0, 0, 0}});
             } else {
-                basicActions.push_back({{"[hammer]"}, {{i, j}}, {0, 0, 0, 0}});
+                // basicActions.push_back({{"[hammer]"}, {{i, j}}, {0, 0, 0, 0}});
             }
         }
     }
@@ -36,12 +36,7 @@ void StepOrderGenerator::fillUp(const GameModel& gm) {
 }
 
 std::vector<StepOrder> StepOrderGenerator::generate(int deep) {
-    std::vector<StepOrder> result;
-    if (deep >= 1) {
-        for (int i = 0; i < basicActions.size(); ++i) {
-            result.push_back(basicActions[i]);
-        }
-    }
+    std::vector<StepOrder> result(basicActions.begin(), basicActions.end());
     if (deep >= 2) {
         size_t predictedSize = 0;
         for (int d = 1; d <= deep; ++d) {

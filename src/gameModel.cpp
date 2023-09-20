@@ -69,12 +69,10 @@ void GameModel::collectByTemplate(
 
 void GameModel::enableDebug() {
     // todo debug compile time
-        debug = true;
-    }
+    debug = true;
+}
 
-void GameModel::disableDebug() {
-        debug = true;
-    }
+void GameModel::disableDebug() { debug = true; }
 
 void GameModel::collectByTemplates(
     const std::vector<std::vector<std::vector<std::string>>>& templates,
@@ -190,8 +188,8 @@ StepProfit GameModel::updateAndReturnProfit() {
     return sum;
 }
 
-void GameModel::explodeIfBooster(int row, int col, StepProfit& profit,
-                                 std::string swapCellType) {
+void GameModel::explodeIfSingleBooster(int row, int col, StepProfit& profit,
+                                       std::string swapCellType) {
     const std::string typeName = matrix[row][col];
     if (isBoosterAt(row, col)) {
         matrix[row][col] = "x";
@@ -215,7 +213,7 @@ void GameModel::explodeIfBooster(int row, int col, StepProfit& profit,
 void GameModel::explodeCell(int row, int col, StepProfit& profit,
                             std::string swapCellType) {
     if (MatrixPoint{row, col}.isCorrect() && matrix[row][col] != "x") {
-        explodeIfBooster(row, col, profit, swapCellType);
+        explodeIfSingleBooster(row, col, profit, swapCellType);
         if (!isBoosterAt(row, col)) {
             setCellDirect(row, col, "x");
             profit.score += 10;
@@ -283,6 +281,62 @@ void GameModel::explodeSun(int row, int col, StepProfit& profit,
             }
         }
     }
+    profit.sun--;
+}
+
+void GameModel::explodeDoubleSnow(int row, int col, StepProfit& profit) {
+    explodeCell(row + 1, col, profit, "");
+    explodeCell(row - 1, col, profit, "");
+    explodeCell(row, col - 1, profit, "");
+    explodeCell(row, col + 1, profit, "");
+
+    explodeCell(row + 2, col, profit, "");
+    explodeCell(row - 2, col, profit, "");
+    explodeCell(row, col - 2, profit, "");
+    explodeCell(row, col + 2, profit, "");
+
+    explodeCell(row + 1, col + 1, profit, "");
+    explodeCell(row + 1, col - 1, profit, "");
+    explodeCell(row - 1, col - 1, profit, "");
+    explodeCell(row - 1, col + 1, profit, "");
+    profit.snow--;
+    profit.snow--;
+}
+
+void GameModel::explodeDoubleSun(int row, int col, StepProfit& profit) {
+    for (int i = 0; i < ROW_SIZE; ++i) {
+        for (int j = 0; j < COL_SIZE; ++j) {
+            explodeCell(i, j, profit, "");
+        }
+    }
+    profit.score -= 20;
+    profit.sun--;
+    profit.sun--;
+}
+
+void GameModel::explodeDoubleRocket(int row, int col, StepProfit& profit) {
+    explodeRocket(row, col, profit, true, "");
+    explodeRocket(row, col, profit, false, "");
+}
+
+void GameModel::explodeSnowAndSun(int row, int col, StepProfit& profit) {
+    explodeSnow(row, col, profit, "");
+
+    explodeCell(row - 3, col - 3, profit, "");
+    explodeCell(row - 2, col - 3, profit, "");
+    explodeCell(row - 3, col - 2, profit, "");
+
+    explodeCell(row - 3, col + 3, profit, "");
+    explodeCell(row - 2, col + 3, profit, "");
+    explodeCell(row - 3, col + 2, profit, "");
+
+    explodeCell(row + 3, col + 3, profit, "");
+    explodeCell(row + 2, col + 3, profit, "");
+    explodeCell(row + 3, col + 2, profit, "");
+
+    explodeCell(row + 3, col - 2, profit, "");
+    explodeCell(row + 2, col - 3, profit, "");
+    explodeCell(row + 3, col - 3, profit, "");
     profit.sun--;
 }
 
