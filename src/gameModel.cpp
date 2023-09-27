@@ -67,6 +67,17 @@ void GameModel::collectByTemplate(
     }
 }
 
+bool GameModel::isValid() {
+    for (int i = 0; i < ROW_SIZE; ++i) {
+        for (int j = 0; j < COL_SIZE; ++j) {
+            if (FIGURE_MAPPER.count(getCell(i, j)) != 1) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void GameModel::enableDebug() {
     // todo debug compile time
     debug = true;
@@ -143,16 +154,15 @@ const std::string& GameModel::getCell(int row, int col) const {
 StepProfit GameModel::updateAndReturnProfit() {
     StepProfit sum;
     while (1) {
-        StepProfit profit;
-
-        collectBoosters(profit);
+        for (int j = 0; j < COL_SIZE; ++j) {
+            notEmptyShiftToBottomInColumn(j);
+        }
         if (debug) {
             std::cout << *this << std::endl;
         }
 
-        for (int j = 0; j < COL_SIZE; ++j) {
-            notEmptyShiftToBottomInColumn(j);
-        }
+        StepProfit profit;
+        collectBoosters(profit);
         if (debug) {
             std::cout << *this << std::endl;
         }
@@ -165,16 +175,15 @@ StepProfit GameModel::updateAndReturnProfit() {
     }
 
     while (1) {
-        StepProfit profit;
-
-        collectTriples(profit);
+        for (int j = 0; j < COL_SIZE; ++j) {
+            notEmptyShiftToBottomInColumn(j);
+        }
         if (debug) {
             std::cout << *this << std::endl;
         }
 
-        for (int j = 0; j < COL_SIZE; ++j) {
-            notEmptyShiftToBottomInColumn(j);
-        }
+        StepProfit profit;
+        collectTriples(profit);
         if (debug) {
             std::cout << *this << std::endl;
         }
@@ -202,11 +211,9 @@ void GameModel::explodeIfSingleBooster(int row, int col, StepProfit& profit,
         } else if (typeName == FIGURE_MAPPER.at("snow")) {
             explodeSnow(row, col, profit, swapCellType);
         }
-        if (profit.score > 0) {
-            for (int j = 0; j < COL_SIZE; ++j) {
-                notEmptyShiftToBottomInColumn(j);
-            }
-        }
+    }
+    if (debug) {
+        std::cout << *this << std::endl;
     }
 }
 
@@ -317,6 +324,28 @@ void GameModel::explodeDoubleSun(int row, int col, StepProfit& profit) {
 void GameModel::explodeDoubleRocket(int row, int col, StepProfit& profit) {
     explodeRocket(row, col, profit, true, "");
     explodeRocket(row, col, profit, false, "");
+}
+
+void GameModel::explodeRocketAndSnow(int row, int col, bool isVertical,
+                                     StepProfit& profit) {
+    if (isVertical) {
+        explodeRocket(row, col, profit, true, "");
+    } else {
+        explodeRocket(row, col, profit, false, "");
+    }
+    // reverse diag
+    int k1 = std::min(ROW_SIZE - 1 - row, col);
+    int k2 = std::min(COL_SIZE - 1 - col, row);
+    for (int k = -k2; k <= k1; ++k) {
+        explodeCell(row + k, col - k, profit, "");
+    }
+    // straight diag
+    k1 = std::min(row, col);
+    k2 = std::min(ROW_SIZE - 1 - row, COL_SIZE - 1 - col);
+    for (int k = -k1; k <= k2; ++k) {
+        explodeCell(row + k, col + k, profit, "");
+    }
+    profit.snow--;
 }
 
 void GameModel::explodeSnowAndSun(int row, int col, StepProfit& profit) {

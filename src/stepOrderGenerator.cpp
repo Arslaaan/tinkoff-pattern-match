@@ -7,14 +7,14 @@ StepOrderGenerator::StepOrderGenerator() {
             if (i < ROW_SIZE - 1) {
                 basicActions.push_back(
                     {{"[swap bottom]"}, {{i, j}}, {0, 0, 0, 0}});
-                // basicActions.push_back(
-                //     {{"[hand bottom]"}, {{i, j}}, {0, 0, 0, 0}});
+                basicActions.push_back(
+                    {{"[hand bottom]"}, {{i, j}}, {0, 0, 0, 0}});
             }
             if (j < COL_SIZE - 1) {
                 basicActions.push_back(
                     {{"[swap right]"}, {{i, j}}, {0, 0, 0, 0}});
-                // basicActions.push_back(
-                //     {{"[hand right]"}, {{i, j}}, {0, 0, 0, 0}});
+                basicActions.push_back(
+                    {{"[hand right]"}, {{i, j}}, {0, 0, 0, 0}});
             }
         }
     }
@@ -28,7 +28,7 @@ void StepOrderGenerator::fillUp(const GameModel& gm) {
             if (gm.isBoosterAt(i, j)) {
                 basicActions.push_back({{"[touch]"}, {{i, j}}, {0, 0, 0, 0}});
             } else {
-                // basicActions.push_back({{"[hammer]"}, {{i, j}}, {0, 0, 0, 0}});
+                basicActions.push_back({{"[hammer]"}, {{i, j}}, {0, 0, 0, 0}});
             }
         }
     }

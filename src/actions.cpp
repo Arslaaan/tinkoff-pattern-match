@@ -1,11 +1,7 @@
 #include "actions.h"
 
 StepProfit Action::getScoreAfterSwap(GameModel& gm, int currentRow,
-                                     int currentCol, int newRow, int newCol,
-                                     bool debug) {
-    if (debug) {
-        gm.enableDebug();
-    }
+                                     int currentCol, int newRow, int newCol) {
     if (gm.isBoosterAt(currentRow, currentCol) &&
         gm.isBoosterAt(newRow, newCol)) {
         std::set<std::string> types = {gm.getCell(currentRow, currentCol), gm.getCell(newRow, newCol)};
@@ -18,10 +14,13 @@ StepProfit Action::getScoreAfterSwap(GameModel& gm, int currentRow,
             gm.explodeDoubleSnow(newRow, newCol, profit);
         } else if (types == SUN_AND_SNOW) {
             gm.explodeSnowAndSun(newRow, newCol, profit);
-        } else if (types == DOUBLE_ROCKET) {
+        } else if (types == std::set<std::string>{"~"} || types == std::set<std::string>{"|"} || types == DOUBLE_ROCKET) {
             gm.explodeDoubleRocket(newRow, newCol, profit);
+        } else if (std::includes(ROCKET_AND_SNOW.begin(), ROCKET_AND_SNOW.end(), types.begin(), types.end())) {
+            bool isVertical = *types.begin() == "|" || *std::next(types.begin()) == "|";
+            gm.explodeRocketAndSnow(newRow, newCol, isVertical, profit);
         }
-        return profit;  // ignore 2 boosters swap because unpredictable
+        return profit + gm.updateAndReturnProfit();  // ignore 2 boosters swap because unpredictable
     }
     if (gm.getCell(currentRow, currentCol) == "x" ||
         gm.getCell(newRow, newCol) == "x") {
@@ -58,12 +57,8 @@ bool Action::checkSwapProfit(const GameModel& gm, StepOrder& stepOrder,
     }
     return false;
 }
-void Action::calculateProfit(const GameModel& gm, StepOrder& stepOrder,
-                             bool debug) {
+void Action::calculateProfit(const GameModel& gm, StepOrder& stepOrder) {
     GameModel newGm = gm;
-    if (debug) {
-        newGm.enableDebug();
-    }
     StepProfit sum;
     for (int i = 0; i < stepOrder.actions.size(); i++) {
         const auto& typeAction = stepOrder.actions[i];

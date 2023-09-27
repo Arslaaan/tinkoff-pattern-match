@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 project(tinkoff-pattern-match VERSION 1.0.0)
 
 SET(CMAKE_CXX_STANDARD 17)
+# SET(CMAKE_CXX_FLAGS_DEBUG "-O3")
 
 include(FetchContent)
 FetchContent_Declare(

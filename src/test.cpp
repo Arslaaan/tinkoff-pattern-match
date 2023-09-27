@@ -117,6 +117,7 @@ TEST(MATRIX, test5) {
     example >> gm;
     std::cout << gm << std::endl;
 
+    gm.enableDebug();
     StepProfit scores = Action::getScoreAfterSwap(gm, 4, 1, 4, 2);
     std::cout << scores << std::endl;
     ASSERT_EQ(scores.score, 90);
@@ -341,12 +342,38 @@ TEST(MATRIX, test13) {
     std::cout << gm << std::endl;
 
     StepOrder stepOrder({"[swap bottom]"}, {{4, 4}}, {0, 0, 0, 0});
-    Action::calculateProfit(gm, stepOrder, true);
+    gm.enableDebug();
+    Action::calculateProfit(gm, stepOrder);
     std::cout << stepOrder.profit << std::endl;
     ASSERT_EQ(stepOrder.profit.score, 120);
 }
 
-TEST(DEEP_CALC, lvl2) {
+TEST(MATRIX, test14) {
+    // shows sun + 1 but nothing happens
+    FigureImages gameObjectImages;
+
+    GameModel gm;
+    std::stringstream example;
+    example << "|8|e|b|g|8|g|";
+    example << "|g|8|b|p|b|p|";
+    example << "|b|b|p|g|8|p|";
+    example << "|~|b|g|e|b|e|";
+    example << "|e|~|b|b|e|b|";
+    example << "|p|8|p|b|p|e|";
+    example << "|s|8|b|8|e|8|";
+    example >> gm;
+    std::cout << gm << std::endl;
+
+    StepOrder stepOrder({"[swap bottom]"}, {{3, 1}}, {0, 0, 0, 0});
+    gm.enableDebug();
+    Action::calculateProfit(gm, stepOrder);
+    std::cout << stepOrder.profit << std::endl;
+    ASSERT_EQ(stepOrder.profit.score, 80);
+    ASSERT_EQ(stepOrder.profit.rocket, -2);
+    ASSERT_EQ(stepOrder.profit.sun, 0);
+}
+
+TEST(MATRIX, doubleRocketSnow) {
     FigureImages gameObjectImages;
 
     GameModel gm;
@@ -354,50 +381,75 @@ TEST(DEEP_CALC, lvl2) {
     example << "|b|8|g|g|b|8|";
     example << "|p|e|g|p|e|b|";
     example << "|b|e|b|p|8|8|";
-    example << "|b|b|g|e|e|p|";
+    example << "|b|b|||s|e|p|";
     example << "|g|g|p|8|8|g|";
     example << "|p|p|8|8|e|g|";
     example << "|b|p|e|p|b|8|";
     example >> gm;
     std::cout << gm << std::endl;
 
-    StepOrderGenerator generator;
-    generator.fillUp(gm);
-    auto stepOrders = move(generator.generate(2));
-    for (auto& stepOrder : stepOrders) {
-        Action::calculateProfit(gm, stepOrder);
-    }
-    std::sort(stepOrders.begin(), stepOrders.end(), std::greater());
-    std::cout << *stepOrders.begin() << std::endl;
+    StepOrder stepOrder({"[swap right]"}, {{3, 2}}, {0, 0, 0, 0});
+    gm.enableDebug();
+    Action::calculateProfit(gm, stepOrder);
+    std::cout << stepOrder.profit << std::endl;
+    ASSERT_EQ(stepOrder.profit.score, 190);
+    ASSERT_EQ(stepOrder.profit.rocket, -1);
+    ASSERT_EQ(stepOrder.profit.snow, -1);
+}
+
+TEST(DEEP_CALC, lvl2) {
+    // FigureImages gameObjectImages;
+
+    // GameModel gm;
+    // std::stringstream example;
+    // example << "|b|8|g|g|b|8|";
+    // example << "|p|e|g|p|e|b|";
+    // example << "|b|e|b|p|8|8|";
+    // example << "|b|b|g|e|e|p|";
+    // example << "|g|g|p|8|8|g|";
+    // example << "|p|p|8|8|e|g|";
+    // example << "|b|p|e|p|b|8|";
+    // example >> gm;
+    // std::cout << gm << std::endl;
+
+    // StepOrderGenerator generator;
+    // generator.fillUp(gm);
+    // auto stepOrders = move(generator.generate(2));
+    // for (auto& stepOrder : stepOrders) {
+    //     Action::calculateProfit(gm, stepOrder);
+    // }
+    // std::sort(stepOrders.begin(), stepOrders.end(), std::greater());
+    // std::cout << *stepOrders.begin() << std::endl;
 }
 
 TEST(DEEP_CALC, lvl3) {
-    FigureImages gameObjectImages;
+    // too long calc
+    // FigureImages gameObjectImages;
 
-    GameModel gm;
-    std::stringstream example;
-    example << "|b|8|g|g|b|8|";
-    example << "|p|e|g|p|e|b|";
-    example << "|b|e|b|p|8|8|";
-    example << "|b|b|g|e|e|p|";
-    example << "|g|g|p|8|8|g|";
-    example << "|p|p|8|8|e|g|";
-    example << "|b|p|e|p|b|8|";
-    example >> gm;
-    std::cout << gm << std::endl;
+    // GameModel gm;
+    // std::stringstream example;
+    // example << "|b|8|g|g|b|8|";
+    // example << "|p|e|g|p|e|b|";
+    // example << "|b|e|b|p|8|8|";
+    // example << "|b|b|g|e|e|p|";
+    // example << "|g|g|p|8|8|g|";
+    // example << "|p|p|8|8|e|g|";
+    // example << "|b|p|e|p|b|8|";
+    // example >> gm;
+    // std::cout << gm << std::endl;
 
-    StepOrderGenerator generator;
-    generator.fillUp(gm);
-    auto stepOrders = move(generator.generate(3));
-    for (auto& stepOrder : stepOrders) {
-        Action::calculateProfit(gm, stepOrder);
-    }
-    std::sort(stepOrders.begin(), stepOrders.end(), std::greater());
-    std::cout << *stepOrders.begin() << std::endl;
+    // StepOrderGenerator generator;
+    // generator.fillUp(gm);
+    // auto stepOrders = move(generator.generate(3));
+    // for (auto& stepOrder : stepOrders) {
+    //     Action::calculateProfit(gm, stepOrder);
+    // }
+    // std::sort(stepOrders.begin(), stepOrders.end(), std::greater());
+    // std::cout << *stepOrders.begin() << std::endl;
 }
 
 int main(int argc, char** argv) {
-    ::testing::GTEST_FLAG(filter) = "*lvl2*";
+    // ::testing::GTEST_FLAG(filter) = "*test5*";
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -79,7 +79,7 @@ void ScreenReader::calibrate(const FigureImages& gameObjectImages) {
                             maxLoc.y + gameObject.second.rows);
                 gridRaw[0].push_back(point.x);
                 gridRaw[1].push_back(point.y);
-                rectangle(gameScreenCopy, maxLoc, point, Scalar(0, 255, 0), 2);
+                // rectangle(gameScreenCopy, maxLoc, point, Scalar(0, 255, 0), 2);
             }
         }
 
@@ -88,6 +88,10 @@ void ScreenReader::calibrate(const FigureImages& gameObjectImages) {
         // resizeWindow(gameObject.first, 800, 800);
         // waitKey(0);
     }
+
+    assert(gridRaw[0].size() == COL_SIZE);
+    assert(gridRaw[1].size() == ROW_SIZE);
+    
     for (int i = 0; i < 2; ++i) {
         grid[i].clear();
         std::sort(gridRaw[i].begin(), gridRaw[i].end());

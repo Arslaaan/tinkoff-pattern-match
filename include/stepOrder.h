@@ -34,7 +34,9 @@ struct StepOrder {
 
     static int allProfit(const StepProfit& profit) {
         // const are average income score by explode booster
-        return profit.score + 55 * profit.rocket + 90 * profit.sun +
-               35 * profit.snow;
+        return profit.score + 55 * std::max(0, profit.rocket) + 90 * std::max(0, profit.sun) +
+               35 * std::max(0, profit.snow);
+        // return profit.score + 55 * profit.rocket + 90 * profit.sun +
+        //        35 * profit.snow;
     }
 };

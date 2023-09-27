@@ -68,6 +68,9 @@ class GameModel {
 
     void explodeDoubleRocket(int row, int col, StepProfit& profit);
 
+    void explodeRocketAndSnow(int row, int col, bool isVertical,
+                              StepProfit& profit);
+
     void explodeSnowAndSun(int row, int col, StepProfit& profit);
 
     bool isBoosterAt(int row, int col) const;
@@ -77,6 +80,8 @@ class GameModel {
     friend std::ostream& operator<<(std::ostream& out, const GameModel& gm);
 
     friend GameModel& operator>>(std::istream& in, GameModel& gm);
+
+    bool isValid();
 
     void enableDebug();
 

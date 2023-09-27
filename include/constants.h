@@ -6,8 +6,6 @@
 const int ROW_SIZE = 7;
 const int COL_SIZE = 6;
 
-const bool CALIBRATION = false;
-
 const std::map<std::string, std::string> FIGURE_MAPPER = {
     {"briefcase", "b"}, {"gold", "g"},  {"pig", "p"},     {"pocket", "e"},
     {"sandclock", "8"}, {"sun", "o"},   {"vrocket", "|"}, {"grocket", "~"},
@@ -19,16 +17,18 @@ const std::map<std::string, std::string> FIGURE_MAPPER = {
 };
 
 // todo replace by enum + refactor actions after
+// todo check income by booster and then fix
 const std::map<std::string, int> BOOSTER_COST_MAPPER = {
-    {"[hammer]", 50},         {"[touch]", 25},      {"[swap right]", 25},
-    {"[swap bottom]", 25}, {"[hand right]", 50}, {"[hand bottom]", 50},
-    {"[hboom]", 100},
+    {"[hammer]", 25},         {"[touch]", 25},      {"[swap right]", 25},
+    {"[swap bottom]", 25}, {"[hand right]", 25}, {"[hand bottom]", 25},
+    {"[hboom]", 75},
 };
 
 const std::set<std::string> DOUBLE_SUN = {"o", "o"};
 const std::set<std::string> DOUBLE_SNOW = {"s", "s"};
 const std::set<std::string> DOUBLE_ROCKET = {"~", "|"};
 const std::set<std::string> SUN_AND_SNOW = {"o", "s"};
+const std::set<std::string> ROCKET_AND_SNOW = {"|", "~", "s"};
 
 namespace FiguresTemplates {
 static const std::vector<std::vector<std::vector<std::string>>>&

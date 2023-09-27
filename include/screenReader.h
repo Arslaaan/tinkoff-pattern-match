@@ -4,13 +4,12 @@
 using namespace cv;
 
 class ScreenReader {
-    // todo read grid after calibrate
     std::vector<std::vector<int>> grid = {
-        {271, 405, 537, 670, 802, 934},
-        {878, 1011, 1145, 1277, 1408, 1541, 1673}};
+        {272, 404, 537, 669, 802, 934},
+        {878, 1011, 1143, 1276, 1408, 1541, 1673}}; //android
     Mat gameScreen;
     Mat gref;
-    const int error = 25;  // pixels
+    const int error = 30;  // pixels
 
     std::pair<int, int> detectRowAndCol(int x, int y);
 
