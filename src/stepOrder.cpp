@@ -48,6 +48,6 @@ std::ostream& operator<<(std::ostream& out, const StepOrder& stepOrder) {
             << ", " << stepOrder.points[i].col + 1 << "] ";
     }
     out << stepOrder.profit
-        << " s/p: " << StepOrder::allProfit(stepOrder.profit) / (1.0 * stepOrder.goldCost);
+        << " s/g: " << StepOrder::allProfit(stepOrder.profit) / (1.0 * stepOrder.goldCost);
     return out;
 }
