@@ -79,7 +79,8 @@ void ScreenReader::calibrate(const FigureImages& gameObjectImages) {
                             maxLoc.y + gameObject.second.rows);
                 gridRaw[0].push_back(point.x);
                 gridRaw[1].push_back(point.y);
-                // rectangle(gameScreenCopy, maxLoc, point, Scalar(0, 255, 0), 2);
+                // rectangle(gameScreenCopy, maxLoc, point, Scalar(0, 255, 0),
+                // 2);
             }
         }
 
@@ -89,9 +90,6 @@ void ScreenReader::calibrate(const FigureImages& gameObjectImages) {
         // waitKey(0);
     }
 
-    assert(gridRaw[0].size() == COL_SIZE);
-    assert(gridRaw[1].size() == ROW_SIZE);
-    
     for (int i = 0; i < 2; ++i) {
         grid[i].clear();
         std::sort(gridRaw[i].begin(), gridRaw[i].end());
@@ -131,3 +129,7 @@ std::pair<int, int> ScreenReader::detectRowAndCol(int x, int y) {
     }
     return {row, col};
 }
+
+std::vector<std::vector<int>> ScreenReader::grid = {
+    {272, 404, 537, 669, 802, 934},
+    {878, 1011, 1143, 1276, 1408, 1541, 1673}};  // android

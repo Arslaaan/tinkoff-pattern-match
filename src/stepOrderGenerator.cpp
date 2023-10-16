@@ -2,7 +2,7 @@
 
 StepOrderGenerator::StepOrderGenerator() {
     for (int i = 0; i < ROW_SIZE; ++i) {
-        // basicActions.push_back({{"[hboom]"}, {{i, 0}}, {0, 0, 0, 0}});
+        basicActions.push_back({{"[hboom]"}, {{i, 0}}, {0, 0, 0, 0}});
         for (int j = 0; j < COL_SIZE; ++j) {
             if (i < ROW_SIZE - 1) {
                 basicActions.push_back(
@@ -32,7 +32,6 @@ void StepOrderGenerator::fillUp(const GameModel& gm) {
             }
         }
     }
-    // std::sort(basicActions.begin(), basicActions.end(), std::greater());
 }
 
 std::vector<StepOrder> StepOrderGenerator::generate(int deep) {
@@ -44,17 +43,13 @@ std::vector<StepOrder> StepOrderGenerator::generate(int deep) {
         }
         std::cout << "Variants: " << predictedSize << std::endl;
         size_t beginIndex = 0;
-        size_t endIndex = result.size();  // endIndex not included
+        size_t endIndex = result.size();
         for (int d = 2; d <= deep; ++d) {
             for (int i = beginIndex; i < endIndex; ++i) {
                 for (int j = 0; j < basicActions.size(); ++j) {
                     StepOrder newOrder = result.at(i);
                     newOrder.addStepOrder(basicActions[j]);
                     result.emplace_back(newOrder);
-                    // if (result.size() % 50 == 0) {
-                    //     std::cout << result.size() << "/" << predictedSize
-                    //               << std::endl;
-                    // }
                 }
             }
             beginIndex = endIndex;

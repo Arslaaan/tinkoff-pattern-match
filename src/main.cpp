@@ -42,7 +42,6 @@ int main() {
         system("~/platform-tools/adb exec-out screencap -p > ../screen.png");
 
         ScreenReader screenReader;
-        screenReader.calibrate(gameObjectImages);
         GameModel gm = screenReader.buildModel(gameObjectImages);
         std::cout << std::flush << gm << std::endl;
         generator.fillUp(gm);

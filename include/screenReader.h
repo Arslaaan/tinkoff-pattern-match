@@ -4,9 +4,6 @@
 using namespace cv;
 
 class ScreenReader {
-    std::vector<std::vector<int>> grid = {
-        {272, 404, 537, 669, 802, 934},
-        {878, 1011, 1143, 1276, 1408, 1541, 1673}}; //android
     Mat gameScreen;
     Mat gref;
     const int error = 30;  // pixels
@@ -16,6 +13,7 @@ class ScreenReader {
     bool inRange(int value, int prop);
 
    public:
+    static std::vector<std::vector<int>> grid;
     ScreenReader();
 
     ScreenReader(std::string screenshotName);
